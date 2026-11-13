@@ -1,0 +1,6 @@
+# Alle Textdateien mit Linux-Zeilenenden (LF) speichern
+* text=auto eol=lf
+
+# Binärdateien nie verändern
+*.png binary
+*.dump binary

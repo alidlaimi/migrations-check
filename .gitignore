@@ -1,0 +1,16 @@
+# Zugangsdaten – nie committen
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Erzeugte Ausgaben
+reports/
+logs/
+*.log
+
+# Datenbank-Abzüge (gross, enthalten Daten)
+*.dump
