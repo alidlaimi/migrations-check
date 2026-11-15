@@ -10,7 +10,7 @@ Fehler ein, die der Check finden muss.
 
 ## Status
 
-🚧 In Arbeit – Meilenstein 1 von 8 (Umgebung und Repository-Struktur)
+🚧 In Arbeit – Meilenstein 2 von 8 (Odoo 18 mit Demodaten als «vorher»-Datenbank)
 
 ## Architektur
 
