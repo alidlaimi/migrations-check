@@ -38,8 +38,9 @@ def benoetigte_objekte(regeln: list[dict]) -> set:
     objekte = set()
     for regel in regeln:
         objekte.update(regel.get("objekte", []))
-        if "objekt" in regel:
-            objekte.add(regel["objekt"])
+        for schluessel in ("objekt", "ziel"):
+            if schluessel in regel:
+                objekte.add(regel[schluessel])
     return objekte
 
 

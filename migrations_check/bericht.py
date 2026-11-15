@@ -5,6 +5,7 @@ from datetime import datetime
 from .ergebnis import FEHLER, OK, WARNUNG, Ergebnis
 
 SYMBOL = {OK: "🟢", WARNUNG: "🟡", FEHLER: "🔴"}
+MAX_DETAILS = 25  # mehr Zeilen je Prüfung machen den Bericht unlesbar
 
 
 def gesamtstatus(ergebnisse: list[Ergebnis]) -> str:
@@ -61,6 +62,8 @@ def markdown(ergebnisse: list[Ergebnis], vorher: str, nachher: str) -> str:
             ]
             if e.details:
                 zeilen += ["", "**Betroffene Datensätze:**", ""]
-                zeilen += [f"- {d}" for d in e.details]
+                zeilen += [f"- {d}" for d in e.details[:MAX_DETAILS]]
+                if len(e.details) > MAX_DETAILS:
+                    zeilen.append(f"- … und {len(e.details) - MAX_DETAILS} weitere")
 
     return "\n".join(zeilen) + "\n"

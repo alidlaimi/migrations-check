@@ -59,17 +59,27 @@ objekte:
     beschreibung: Lagerbestand je Produkt und Lagerort (nur echte Lager)
     schluessel: t.id
     vorher:
-      von: stock_quant t JOIN stock_location l ON l.id = t.location_id
+      # LEFT JOIN auf das Produkt: Bestand zählt auch, wenn das Produkt fehlt
+      von: >
+        stock_quant t
+        JOIN stock_location l ON l.id = t.location_id
+        LEFT JOIN product_product p ON p.id = t.product_id
       filter: l.usage = 'internal'
     nachher:
       # U1: Tabelle und Spalte umbenannt
-      von: stock_level t JOIN stock_location l ON l.id = t.location_id
+      von: >
+        stock_level t
+        JOIN stock_location l ON l.id = t.location_id
+        LEFT JOIN product p ON p.id = t.product_id
       filter: l.usage = 'internal'
     felder:
       produkt_id:  { vorher: t.product_id,  nachher: t.product_id }
       lagerort_id: { vorher: t.location_id, nachher: t.location_id }
       lagerort:    { vorher: l.complete_name, nachher: l.complete_name }
       menge:       { vorher: t.quantity,    nachher: t.qty_on_hand }
+      # Bestandswert = Menge × Einstandspreis (U4: Preis vorher jsonb, nachher numeric)
+      wert:        { vorher: "t.quantity * (p.standard_price ->> '1')::numeric",
+                     nachher: "t.qty_on_hand * p.cost_price" }
 
   verkaufsauftrag:
     beschreibung: Verkaufsaufträge

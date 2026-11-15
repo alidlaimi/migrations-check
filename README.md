@@ -10,7 +10,7 @@ Fehler ein, die der Check finden muss.
 
 ## Status
 
-🚧 In Arbeit – Meilenstein 4 von 8 (erste Prüfungen: Anzahl, Vollständigkeit, Pflichtfelder, Dubletten; Markdown-Bericht)
+🚧 In Arbeit – Meilenstein 5 von 8 (alle Prüfungen: Stammdaten, Bestände, offene Belege, Integrität, Stichproben – findet alle 9 eingebauten Fehler)
 
 ## Architektur
 

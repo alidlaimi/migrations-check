@@ -66,3 +66,176 @@ pruefungen:
     erklaerung: >
       Dieselbe Artikelnummer zweimal verteilt Bestand und Umsatz auf zwei Datensätze;
       Lager und Auswertungen stimmen nicht mehr. Typisch nach dem Zusammenlegen von Tabellen.
+
+  # --- Bestände -----------------------------------------------------------
+
+  - typ: summe
+    titel: Bestandsmenge
+    objekt: bestand
+    gruppe: [produkt_id, lagerort]
+    feld: menge
+    toleranz: 0          # Stückzahlen müssen exakt stimmen
+    schweregrad: fehler
+    erklaerung: >
+      Weicht die Menge je Produkt und Lagerort ab, stimmt der Buchbestand nicht mehr
+      mit dem physischen Bestand überein: Lieferungen werden falsch zugesagt,
+      die nächste Inventur zeigt Differenzen.
+
+  - typ: summe
+    titel: Bestandswert
+    objekt: bestand
+    gruppe: [produkt_id]
+    feld: wert
+    toleranz: 0.01       # Rundung auf den Rappen ist zulässig
+    schweregrad: fehler
+    erklaerung: >
+      Der Bestandswert (Menge × Einstandspreis) fliesst direkt in die Bilanz.
+      Eine Abweichung verfälscht Lagerbewertung und Margen.
+
+  - typ: feldvergleich
+    titel: Preise
+    objekt: produkt
+    felder: [einstandspreis, verkaufspreis]
+    anzeige: name
+    toleranz: 0.005      # weniger als ein halber Rappen gilt als gleich
+    schweregrad: fehler
+    erklaerung: >
+      Preise werden bei einem Upgrade oft umgewandelt (Datentyp, Währung, Einheit).
+      Rundungsfehler betreffen dann nicht einen Artikel, sondern alle mit demselben
+      Muster – darum werden hier alle Produkte geprüft, nicht nur eine Stichprobe.
+
+  # --- Offene Belege ------------------------------------------------------
+
+  - typ: offene_belege
+    titel: Offene Rechnungen
+    objekt: rechnung
+    anzeige: nummer
+    offen_wenn:
+      status: [posted]
+      zahlstatus: [not_paid, partial, in_payment]
+    betraege: [total, offen]
+    toleranz: 0.01
+    schweregrad: fehler
+    erklaerung: >
+      Offene Rechnungen sind Forderungen und Verbindlichkeiten. Eine fälschlich als
+      bezahlt markierte Rechnung fällt aus dem Mahnwesen – das Geld wird nie
+      eingefordert. Eine falsche Summe führt zu falschen Mahnungen und Zahlungen.
+
+  - typ: offene_belege
+    titel: Offene Verkaufsaufträge
+    objekt: verkaufsauftrag
+    anzeige: nummer
+    offen_wenn:
+      status: [sale]
+      # "no" in Anführungszeichen: ohne sie liest YAML das Wort als false (Ja/Nein-Wert)
+      fakturastatus: ["no", "to invoice", "upselling"]
+    betraege: [total]
+    toleranz: 0.01
+    schweregrad: fehler
+    erklaerung: >
+      Bestätigte, nicht vollständig fakturierte Aufträge sind zugesagte Lieferungen
+      und künftiger Umsatz. Fehlen sie nachher, wird nicht geliefert oder nicht fakturiert.
+
+  - typ: offene_belege
+    titel: Offene Bestellungen
+    objekt: bestellung
+    anzeige: nummer
+    offen_wenn:
+      status: [purchase]
+      fakturastatus: ["no", "to invoice"]
+    betraege: [total]
+    toleranz: 0.01
+    schweregrad: fehler
+    erklaerung: >
+      Bestätigte Bestellungen sind erwartete Wareneingänge und Verbindlichkeiten.
+      Fehlen sie, wird Ware nicht erwartet oder doppelt bestellt.
+
+  # --- Referenzielle Integrität -------------------------------------------
+
+  - typ: referenz
+    titel: Verwaiste Verknüpfung
+    objekt: auftragszeile
+    feld: produkt_id
+    ziel: produkt
+    schweregrad: fehler
+    erklaerung: >
+      Eine Auftragszeile ohne gültiges Produkt kann weder geliefert noch fakturiert
+      werden. Entsteht typischerweise, wenn bei einem Massenimport Fremdschlüssel
+      abgeschaltet waren.
+
+  - typ: referenz
+    titel: Verwaiste Verknüpfung
+    objekt: auftragszeile
+    feld: auftrag_id
+    ziel: verkaufsauftrag
+    schweregrad: fehler
+    erklaerung: >
+      Eine Position ohne Auftrag ist ein Datenleichnam: sie zählt in Auswertungen mit,
+      gehört aber zu keinem Kunden.
+
+  - typ: referenz
+    titel: Verwaiste Verknüpfung
+    objekt: bestand
+    feld: produkt_id
+    ziel: produkt
+    schweregrad: fehler
+    erklaerung: >
+      Bestand ohne Produkt ist Ware, die im System niemandem gehört – sie wird weder
+      verkauft noch bewertet.
+
+  - typ: referenz
+    titel: Verwaiste Verknüpfung
+    objekt: verkaufsauftrag
+    feld: kunde_id
+    ziel: partner
+    schweregrad: fehler
+    erklaerung: Ein Auftrag ohne Kunden kann nicht geliefert und nicht fakturiert werden.
+
+  - typ: referenz
+    titel: Verwaiste Verknüpfung
+    objekt: bestellung
+    feld: lieferant_id
+    ziel: partner
+    schweregrad: fehler
+    erklaerung: Eine Bestellung ohne Lieferanten kann nicht übermittelt und nicht bezahlt werden.
+
+  - typ: referenz
+    titel: Verwaiste Verknüpfung
+    objekt: rechnung
+    feld: partner_id
+    ziel: partner
+    schweregrad: fehler
+    erklaerung: Eine Rechnung ohne Partner kann nicht gemahnt oder bezahlt werden.
+
+  # --- Stichproben --------------------------------------------------------
+
+  - typ: feldvergleich
+    titel: Stichprobe
+    objekt: partner
+    stichprobe: 10
+    anzeige: name
+    schweregrad: fehler
+    erklaerung: >
+      Zufällig gewählte Datensätze werden über alle Felder verglichen. Das findet
+      Fehler in Feldern, für die es keine eigene Prüfung gibt – etwa eine vertauschte
+      Adresse. Fester Startwert: jeder Lauf prüft dieselben Datensätze.
+
+  - typ: feldvergleich
+    titel: Stichprobe
+    objekt: produkt
+    stichprobe: 10
+    anzeige: name
+    toleranz: 0.005
+    schweregrad: fehler
+    erklaerung: >
+      Zufällig gewählte Produkte über alle Felder, inklusive umgerechneter Einheiten
+      (Gewicht in kg). Prüft, ob das Mapping die Upgrade-Änderungen richtig abbildet.
+
+  - typ: feldvergleich
+    titel: Stichprobe
+    objekt: verkaufsauftrag
+    stichprobe: 10
+    anzeige: nummer
+    toleranz: 0.01
+    schweregrad: fehler
+    erklaerung: Zufällig gewählte Aufträge über alle Felder (Kunde, Status, Total).
