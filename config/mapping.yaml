@@ -1,0 +1,127 @@
+# =====================================================================
+# mapping.yaml – Zuordnung vorher -> nachher
+# =====================================================================
+# Das Upgrade hat Tabellen umbenannt, zusammengelegt, aufgeteilt und
+# Einheiten geändert. Damit der Check vorher und nachher vergleichen kann,
+# übersetzt dieses Mapping BEIDE Datenbanken in dieselbe fachliche Sicht:
+# gleiche Objekte, gleiche Feldnamen, gleiche Einheiten.
+#
+# Aufbau je Objekt:
+#   schluessel  Ausdruck, der einen Datensatz eindeutig identifiziert
+#   vorher/nachher:
+#     von       FROM-Teil der Abfrage (Haupttabelle hat immer den Alias t)
+#     filter    optionale WHERE-Bedingung (welche Datensätze fachlich zählen)
+#   felder      fachlicher Name -> SQL-Ausdruck vorher / nachher
+#               Einheiten werden hier vereinheitlicht (z.B. Rappen -> CHF).
+# =====================================================================
+
+objekte:
+
+  partner:
+    beschreibung: Kunden, Lieferanten und Kontakte
+    schluessel: t.id
+    vorher:
+      von: res_partner t
+    nachher:
+      # U3: Adresse liegt nachher in eigener Tabelle
+      von: res_partner t LEFT JOIN partner_address a ON a.partner_id = t.id
+    felder:
+      name:         { vorher: t.name,       nachher: t.name }
+      email:        { vorher: t.email,      nachher: t.email }
+      firma:        { vorher: t.is_company, nachher: t.is_company }
+      aktiv:        { vorher: t.active,     nachher: t.active }
+      strasse:      { vorher: t.street,     nachher: a.street }
+      adresszusatz: { vorher: t.street2,    nachher: a.address_line2 }   # U3: umbenannt
+      plz:          { vorher: t.zip,        nachher: a.zip }
+      ort:          { vorher: t.city,       nachher: a.city }
+
+  produkt:
+    beschreibung: Produkte (eine Zeile je Variante)
+    schluessel: t.id
+    vorher:
+      # U2: vorher auf Vorlage (v) und Variante (t) verteilt
+      von: product_product t JOIN product_template v ON v.id = t.product_tmpl_id
+    nachher:
+      von: product t
+    felder:
+      name:           { vorher: "coalesce(v.name ->> 'de_CH', v.name ->> 'en_US')", nachher: t.name }
+      artikelnummer:  { vorher: t.default_code, nachher: t.default_code }
+      typ:            { vorher: v.type,         nachher: t.type }
+      lagergefuehrt:  { vorher: v.is_storable,  nachher: t.is_storable }
+      verkaufspreis:  { vorher: v.list_price,   nachher: t.list_price }
+      # U4: jsonb je Firma -> numeric
+      einstandspreis: { vorher: "(t.standard_price ->> '1')::numeric", nachher: t.cost_price }
+      # U4: Gramm -> Kilogramm, damit beide Seiten dieselbe Einheit haben
+      gewicht_kg:     { vorher: "coalesce(t.weight, v.weight)", nachher: "t.weight_g / 1000" }
+      aktiv:          { vorher: "t.active AND v.active", nachher: t.active }
+
+  bestand:
+    beschreibung: Lagerbestand je Produkt und Lagerort (nur echte Lager)
+    schluessel: t.id
+    vorher:
+      von: stock_quant t JOIN stock_location l ON l.id = t.location_id
+      filter: l.usage = 'internal'
+    nachher:
+      # U1: Tabelle und Spalte umbenannt
+      von: stock_level t JOIN stock_location l ON l.id = t.location_id
+      filter: l.usage = 'internal'
+    felder:
+      produkt_id:  { vorher: t.product_id,  nachher: t.product_id }
+      lagerort_id: { vorher: t.location_id, nachher: t.location_id }
+      lagerort:    { vorher: l.complete_name, nachher: l.complete_name }
+      menge:       { vorher: t.quantity,    nachher: t.qty_on_hand }
+
+  verkaufsauftrag:
+    beschreibung: Verkaufsaufträge
+    schluessel: t.id
+    vorher:  { von: sale_order t }
+    nachher: { von: sale_order t }
+    felder:
+      nummer:          { vorher: t.name,           nachher: t.name }
+      kunde_id:        { vorher: t.partner_id,     nachher: t.partner_id }
+      status:          { vorher: t.state,          nachher: t.state }
+      fakturastatus:   { vorher: t.invoice_status, nachher: t.invoice_status }
+      total:           { vorher: t.amount_total,   nachher: t.amount_total }
+
+  auftragszeile:
+    beschreibung: Positionen der Verkaufsaufträge
+    schluessel: t.id
+    vorher:  { von: sale_order_line t, filter: t.display_type IS NULL }
+    nachher: { von: sale_order_line t, filter: t.display_type IS NULL }
+    felder:
+      auftrag_id: { vorher: t.order_id,        nachher: t.order_id }
+      produkt_id: { vorher: t.product_id,      nachher: t.product_id }
+      menge:      { vorher: t.product_uom_qty, nachher: t.product_uom_qty }
+      preis:      { vorher: t.price_unit,      nachher: t.price_unit }
+
+  bestellung:
+    beschreibung: Einkaufsbestellungen
+    schluessel: t.id
+    vorher:  { von: purchase_order t }
+    nachher: { von: purchase_order t }
+    felder:
+      nummer:          { vorher: t.name,           nachher: t.name }
+      lieferant_id:    { vorher: t.partner_id,     nachher: t.partner_id }
+      status:          { vorher: t.state,          nachher: t.state }
+      fakturastatus:   { vorher: t.invoice_status, nachher: t.invoice_status }
+      total:           { vorher: t.amount_total,   nachher: t.amount_total }
+
+  rechnung:
+    beschreibung: Kunden- und Lieferantenrechnungen inkl. Gutschriften
+    schluessel: t.id
+    vorher:
+      von: account_move t
+      filter: t.move_type IN ('out_invoice', 'in_invoice', 'out_refund', 'in_refund')
+    nachher:
+      von: account_move t
+      filter: t.move_type IN ('out_invoice', 'in_invoice', 'out_refund', 'in_refund')
+    felder:
+      nummer:     { vorher: t.name,          nachher: t.name }
+      typ:        { vorher: t.move_type,     nachher: t.move_type }
+      partner_id: { vorher: t.partner_id,    nachher: t.partner_id }
+      status:     { vorher: t.state,         nachher: t.state }
+      zahlstatus: { vorher: t.payment_state, nachher: t.payment_state }
+      # U4: Rappen (bigint) -> CHF
+      netto:      { vorher: t.amount_untaxed,  nachher: "t.amount_untaxed_cents / 100.0" }
+      total:      { vorher: t.amount_total,    nachher: "t.amount_total_cents / 100.0" }
+      offen:      { vorher: t.amount_residual, nachher: "t.amount_residual_cents / 100.0" }
