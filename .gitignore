@@ -14,3 +14,4 @@ logs/
 
 # Datenbank-Abzüge (gross, enthalten Daten)
 *.dump
+!dumps/odoo_vorher.dump

@@ -10,7 +10,7 @@ Fehler ein, die der Check finden muss.
 
 ## Status
 
-🚧 In Arbeit – Meilenstein 6 von 8 (HTML-Bericht, Bash-Einstieg mit Logging und Exit-Codes)
+🚧 In Arbeit – Meilenstein 7 von 8 (pytest-Tests und GitHub-Actions-Pipeline)
 
 ## Architektur
 

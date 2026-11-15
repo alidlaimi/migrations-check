@@ -1,0 +1,75 @@
+# =====================================================================
+# GitHub Actions: läuft bei jedem Push automatisch auf einem Linux-Server
+# =====================================================================
+# 1. Tests (pytest) gegen eine kleine Test-Datenbank
+# 2. Beispiel-Lauf mit den Odoo-Demodaten:
+#      saubere Migration     -> Check muss bestehen   (Exit-Code 0)
+#      Migration mit Fehlern -> Check muss blockieren (Exit-Code 1)
+# 3. Berichte und Logs als Artefakt zum Herunterladen
+# =====================================================================
+
+name: Migrations-Check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:      # zusätzlich von Hand startbar (Knopf "Run workflow")
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Python-Pakete installieren
+        run: pip install -r requirements.txt
+
+      - name: Zugangsdaten für die Pipeline
+        # Wegwerf-Datenbank nur für diesen Lauf: die Vorlage genügt
+        run: cp .env.example .env
+
+      - name: PostgreSQL starten
+        # --wait: wartet, bis der Healthcheck in docker-compose.yml "gesund" meldet
+        run: docker compose up -d --wait db
+
+      - name: Tests
+        run: |
+          set -a; source .env; set +a
+          pytest -v
+
+      - name: vorher-Datenbank aus dem Abzug einspielen
+        run: |
+          set -a; source .env; set +a
+          docker compose exec -T db createdb -U "$PGUSER" "$DB_VORHER"
+          docker compose exec -T db pg_restore -U "$PGUSER" -d "$DB_VORHER" --no-owner < dumps/odoo_vorher.dump
+
+      - name: nachher-Datenbanken erzeugen (Upgrade mit und ohne Fehler)
+        run: |
+          ./migration/nachher-erstellen.sh
+          ./migration/nachher-erstellen.sh --sauber
+
+      - name: "Beispiel-Lauf 1: saubere Migration muss bestehen"
+        run: ./migrations-check.sh -o reports/sauber odoo_vorher odoo_nachher_sauber
+
+      - name: "Beispiel-Lauf 2: Migration mit Fehlern muss blockiert werden"
+        run: |
+          code=0
+          ./migrations-check.sh -o reports/fehler odoo_vorher odoo_nachher || code=$?
+          echo "Exit-Code: $code (erwartet: 1)"
+          test "$code" -eq 1
+
+      - name: Berichte und Logs hochladen
+        if: always()      # auch wenn ein Schritt davor fehlgeschlagen ist
+        uses: actions/upload-artifact@v4
+        with:
+          name: migrations-check-berichte
+          path: |
+            reports/
+            logs/
