@@ -10,7 +10,7 @@ Fehler ein, die der Check finden muss.
 
 ## Status
 
-🚧 In Arbeit – Meilenstein 2 von 8 (Odoo 18 mit Demodaten als «vorher»-Datenbank)
+🚧 In Arbeit – Meilenstein 4 von 8 (erste Prüfungen: Anzahl, Vollständigkeit, Pflichtfelder, Dubletten; Markdown-Bericht)
 
 ## Architektur
 

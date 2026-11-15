@@ -1,0 +1,68 @@
+# =====================================================================
+# pruefungen.yaml – welche Prüfungen laufen, mit welcher Strenge
+# =====================================================================
+# Jede Prüfung hat:
+#   typ          welche Prüf-Funktion (siehe migrations_check/pruefungen.py)
+#   titel        Name im Bericht
+#   schweregrad  fehler (blockiert Go-Live) oder warnung (fachlich beurteilen)
+#   erklaerung   warum eine Abweichung fachlich relevant ist
+# Die Objekte und Felder beziehen sich auf config/mapping.yaml.
+# =====================================================================
+
+pruefungen:
+
+  # --- Stammdaten -------------------------------------------------------
+
+  - typ: anzahl
+    titel: Anzahl Datensätze
+    objekte: [partner, produkt, bestand, verkaufsauftrag, auftragszeile, bestellung, rechnung]
+    toleranz: 0
+    schweregrad: fehler
+    erklaerung: >
+      Ein Upgrade darf keine Datensätze verlieren oder erfinden. Eine abweichende
+      Anzahl ist der schnellste Hinweis auf verlorene oder doppelte Daten. Gleiche
+      Anzahl heisst aber nicht, dass alles stimmt – darum folgen weitere Prüfungen.
+
+  - typ: vollstaendigkeit
+    titel: Fehlende oder neue Datensätze
+    objekt: partner
+    anzeige: name
+    schweregrad: fehler
+    erklaerung: >
+      Fehlende Kunden, Lieferanten oder Kontakte bedeuten verlorene Ansprechpartner
+      und Belege, die ins Leere laufen.
+
+  - typ: vollstaendigkeit
+    titel: Fehlende oder neue Datensätze
+    objekt: produkt
+    anzeige: name
+    schweregrad: fehler
+    erklaerung: >
+      Ein fehlendes Produkt kann nicht mehr bestellt, verkauft oder abgerechnet
+      werden. Ein unerwartet neues Produkt deutet auf eine Dublette hin.
+
+  - typ: pflichtfeld
+    titel: Pflichtfeld leer
+    objekt: partner
+    feld: name
+    schweregrad: fehler
+    erklaerung: >
+      Ein Partner ohne Namen erscheint auf Rechnungen, Lieferscheinen und Mahnungen
+      ohne Empfänger. Leerer Text zählt wie ein fehlender Wert.
+
+  - typ: pflichtfeld
+    titel: Pflichtfeld leer
+    objekt: produkt
+    feld: name
+    schweregrad: fehler
+    erklaerung: >
+      Ein Produkt ohne Bezeichnung ist auf Belegen und in der Suche nicht auffindbar.
+
+  - typ: dubletten
+    titel: Dubletten
+    objekt: produkt
+    feld: artikelnummer
+    schweregrad: fehler
+    erklaerung: >
+      Dieselbe Artikelnummer zweimal verteilt Bestand und Umsatz auf zwei Datensätze;
+      Lager und Auswertungen stimmen nicht mehr. Typisch nach dem Zusammenlegen von Tabellen.

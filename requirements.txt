@@ -1,0 +1,6 @@
+# Laufzeit
+psycopg[binary]>=3.2,<4   # PostgreSQL-Treiber
+PyYAML>=6,<7              # liest config/*.yaml
+
+# Entwicklung / Tests
+pytest>=8,<10
