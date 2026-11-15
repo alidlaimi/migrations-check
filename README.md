@@ -10,7 +10,7 @@ Fehler ein, die der Check finden muss.
 
 ## Status
 
-🚧 In Arbeit – Meilenstein 5 von 8 (alle Prüfungen: Stammdaten, Bestände, offene Belege, Integrität, Stichproben – findet alle 9 eingebauten Fehler)
+🚧 In Arbeit – Meilenstein 6 von 8 (HTML-Bericht, Bash-Einstieg mit Logging und Exit-Codes)
 
 ## Architektur
 

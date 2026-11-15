@@ -53,8 +53,8 @@ def main() -> int:
     parser.add_argument("nachher", help="Name der Datenbank nach dem Upgrade")
     parser.add_argument("--mapping", type=Path, default=PROJEKT / "config/mapping.yaml")
     parser.add_argument("--pruefungen", type=Path, default=PROJEKT / "config/pruefungen.yaml")
-    parser.add_argument("--bericht", type=Path, default=PROJEKT / "reports/bericht.md",
-                        help="Pfad für den Markdown-Bericht")
+    parser.add_argument("--ausgabe", type=Path, default=PROJEKT / "reports",
+                        help="Ordner für bericht.md und bericht.html (Standard: reports/)")
     args = parser.parse_args()
 
     objekte = mapping.laden(args.mapping)
@@ -77,11 +77,14 @@ def main() -> int:
     for regel in regeln:
         ergebnisse += PRUEFUNGEN[regel["typ"]](regel, daten)
 
-    args.bericht.parent.mkdir(parents=True, exist_ok=True)
-    args.bericht.write_text(bericht.markdown(ergebnisse, args.vorher, args.nachher), encoding="utf-8")
+    args.ausgabe.mkdir(parents=True, exist_ok=True)
+    (args.ausgabe / "bericht.md").write_text(
+        bericht.markdown(ergebnisse, args.vorher, args.nachher), encoding="utf-8")
+    (args.ausgabe / "bericht.html").write_text(
+        bericht.html(ergebnisse, args.vorher, args.nachher), encoding="utf-8")
 
     status = bericht.gesamtstatus(ergebnisse)
-    print(f"Gesamtergebnis: {status.upper()} – Bericht: {args.bericht}")
+    print(f"Gesamtergebnis: {status.upper()} – Bericht: {args.ausgabe / 'bericht.html'}")
     return 1 if status == FEHLER else 0
 
 
