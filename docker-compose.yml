@@ -1,0 +1,28 @@
+# Lokale Testumgebung: PostgreSQL-Server und Odoo 18
+# Zugangsdaten kommen aus .env (wird von Docker Compose automatisch gelesen)
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  odoo:
+    image: odoo:18
+    depends_on:
+      - db
+    environment:
+      HOST: db
+      USER: ${PGUSER}
+      PASSWORD: ${PGPASSWORD}
+    ports:
+      - "8069:8069"
+
+volumes:
+  pgdata:
