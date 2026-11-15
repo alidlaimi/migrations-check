@@ -67,7 +67,7 @@ jobs:
 
       - name: Berichte und Logs hochladen
         if: always()      # auch wenn ein Schritt davor fehlgeschlagen ist
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: migrations-check-berichte
           path: |
